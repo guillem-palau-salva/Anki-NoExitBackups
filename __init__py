@@ -1,0 +1,51 @@
+"""
+What it does: This add-on disables the auto backup creation when closing either the profile or the app.
+By monkey patching the _unloadCollection method
+
+Author: Guillem Palau Salvà
+
+Note: Please use this add-on with caution. I am not responsable to any data loss you may expirience.
+
+
+"""
+
+
+from aqt.main import AnkiQt
+from aqt.utils import showWarning
+
+
+ 
+def _unloadCollection2(self) -> None:
+	if not self.col:
+		return
+	if self.restoringBackup:
+		label = _("Closing...")
+	else:
+		label = _("Backing Up...")
+	self.progress.start(label=label, immediate=True)
+	corrupt = False
+
+	try:
+		self.col.close()
+	except:
+		corrupt = True
+	finally:
+		self.col = None
+	if corrupt:
+		showWarning(
+			_(
+				"Your collection file appears to be corrupt. \
+This can happen when the file is copied or moved while Anki is open, or \
+when the collection is stored on a network or cloud drive. If problems \
+persist after restarting your computer, please open an automatic backup \
+from the profile screen."
+			)
+		)
+	if not corrupt and not self.restoringBackup:
+		#self.backup()
+		pass
+	self.progress.finish()
+	
+	
+	
+AnkiQt._unloadCollection = _unloadCollection2
